@@ -25,11 +25,6 @@
           white-space: nowrap; pointer-events: none;
           backdrop-filter: blur(4px); }
   #aide b { color: #fff; font-weight: 600; }
-  #retour { position: fixed; left: 14px; top: 12px; z-index: 8;
-            color: rgba(255, 255, 255, 0.65);
-            font: 14px system-ui, sans-serif; text-decoration: none;
-            background: rgba(0, 0, 0, 0.35);
-            padding: 6px 12px; border-radius: 999px; }
   @media (max-width: 640px) {
   #aide { position: fixed; left: 50%; transform: translateX(-50%);
           top: 12px; z-index: 8;
@@ -44,7 +39,6 @@
 </head>
 <body>
 <pre id="err"></pre>
-<a id="retour" href="../">← retour</a>
 <canvas id="jeu" tabindex="0" autofocus></canvas>
 <div id="aide">
   Déplacement <b>ZQSD</b> ou <b>flèches</b> &nbsp;·&nbsp;
