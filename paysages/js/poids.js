@@ -6,6 +6,11 @@ let COUCHES_SR = null;
 
 const TAILLE_MORCEAU = 20 * 1024 * 1024;
 
+// A incrementer chaque fois que les fichiers de poids changent.
+// Les .bin sont mis en cache pour un an (voir _headers) : sans ce
+// numero dans l'URL, les visiteurs garderaient l'ancienne version.
+const VERSION_POIDS = '2';
+
 // Telecharge un .bin, decoupe ou non, avec progression.
 // octets : taille totale attendue, deduite du json.
 async function chargeBin(chemin, octets, progres) {
@@ -14,20 +19,22 @@ async function chargeBin(chemin, octets, progres) {
   let pos = 0;
 
   for (let i = 0; i < nMorceaux; i++) {
-    const url = (nMorceaux === 1) ? chemin : chemin + '.' + i;
+    const base = (nMorceaux === 1) ? chemin : chemin + '.' + i;
+    const url = base + '?v=' + VERSION_POIDS;
+
     const r = await fetch(url);
-    if (!r.ok) throw new Error(url + ' : HTTP ' + r.status);
+    if (!r.ok) throw new Error(base + ' : HTTP ' + r.status);
 
     const type = r.headers.get('content-type') || '';
     if (type.includes('text/html')) {
-      throw new Error(url + " : le serveur renvoie une page HTML, le fichier n'existe pas");
+      throw new Error(base + " : le serveur renvoie une page HTML, le fichier n'existe pas");
     }
 
     const buf = new Uint8Array(await r.arrayBuffer());
 
     if (buf.length < 1000) {
       const apercu = new TextDecoder().decode(buf.subarray(0, 200));
-      throw new Error(url + ' : seulement ' + buf.length + ' octets. Contenu : ' + apercu);
+      throw new Error(base + ' : seulement ' + buf.length + ' octets. Contenu : ' + apercu);
     }
 
     sortie.set(buf, pos);
@@ -42,7 +49,7 @@ async function chargeBin(chemin, octets, progres) {
 }
 
 async function chargeVariante(cle, base, progres) {
-  const rj = await fetch('./modele/' + base + '.json');
+  const rj = await fetch('./modele/' + base + '.json?v=' + VERSION_POIDS);
   if (!rj.ok) throw new Error(base + '.json : HTTP ' + rj.status);
   const desc = await rj.json();
 
@@ -71,7 +78,7 @@ function choisitVariante(cle) {
 }
 
 async function chargePoidsSR(progres) {
-  const rj = await fetch('./modele/poids_sr.json');
+  const rj = await fetch('./modele/poids_sr.json?v=' + VERSION_POIDS);
   if (!rj.ok) throw new Error('poids_sr.json : HTTP ' + rj.status);
   const desc = await rj.json();
 
