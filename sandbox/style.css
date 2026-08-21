@@ -1,0 +1,145 @@
+* {
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-touch-callout: none;
+}
+body {
+	margin: 0;
+	overflow: hidden;
+	touch-action: none;
+	background-color: #000000;
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+	height: 100dvh; /* meilleur support des barres dynamiques (Safari iOS) */
+}
+
+/* --- plateau 3D : occupe tout l'espace restant, separe des boutons (plus un overlay) --- */
+
+#game-container {
+	flex: 1;
+	min-height: 0; /* necessaire pour qu'un flex:1 fonctionne correctement avec un canvas a l'interieur */
+	position: relative;
+}
+#game-container canvas {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+/* --- boutons : zone dediee en bas, plus jamais superposee au plateau --- */
+
+#tools {
+	flex-shrink: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 6px calc(90px + env(safe-area-inset-bottom, 0px));
+	background-color: #000000;
+}
+#tools-controls, #tools-elements {
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+	justify-content: center;
+}
+
+/* --- reprise du style de la version 2D, boutons un peu plus compacts pour tenir sur 1-2 lignes --- */
+
+.tool {
+	all: unset;
+	font-family: "Press Start 2P", sans-serif;
+	font-size: 18px;
+	border-style: solid;
+	width: 150px;
+	height: 30px;
+	text-align: center;
+	color: #ffffff;
+	text-shadow:
+		2px 2px 2px rgba(50, 50, 50, 0.5),
+		-2px -2px 2px rgba(50, 50, 50, 0.5),
+		2px -2px 2px rgba(50, 50, 50, 0.5),
+		-2px 2px 2px rgba(50, 50, 50, 0.5),
+		0px 4px 2px rgba(50, 50, 50, 0.5),
+		4px 0px 2px rgba(50, 50, 50, 0.5);
+}
+
+.tool[data-mode="destroy"] {
+	background-color: #fdb5ff; border-color: #713d73;
+}
+.tool[data-mode="destroy"].active {
+	background-color: #fec8ff; border-color: #67f668;
+}
+
+.tool[data-mode="drag"] {
+	background-color: #c0ceb6; border-color: #576c47;
+}
+.tool[data-mode="drag"].active {
+	background-color: #d3e3c8; border-color: #67f668;
+}
+
+.tool-el[data-el="sand"] {
+	background-color: #e6d577; border-color: #85772c;
+}
+.tool-el[data-el="sand"].active {
+	background-color: #fdea82; border-color: #67f668;
+}
+
+.tool-el[data-el="wetSand"] {
+	background-color: #ad9f55; border-color: #806e0e;
+}
+.tool-el[data-el="wetSand"].active {
+	background-color: #beb05d; border-color: #67f668;
+}
+
+.tool-el[data-el="dirt"] {
+	background-color: #583d1b; border-color: #865e2d;
+}
+.tool-el[data-el="dirt"].active {
+	background-color: #75542a; border-color: #67f668;
+}
+
+.tool-el[data-el="mud"] {
+	background-color: #382417; border-color: #7f5234;
+}
+.tool-el[data-el="mud"].active {
+	background-color: #3d2719; border-color: #67f668;
+}
+
+.tool-el[data-el="rock"] {
+	background-color: #505050; border-color: #828282;
+}
+.tool-el[data-el="rock"].active {
+	background-color: #868586; border-color: #67f668;
+}
+
+.tool-el[data-el="water"] {
+	background-color: #2167ff; border-color: #2d4985;
+}
+.tool-el[data-el="water"].active {
+	background-color: #2471ff; border-color: #67f668;
+}
+
+#reset-btn {
+	background-color: #b53030; border-color: #6e1b1b;
+}
+#reset-btn:active {
+	background-color: #d94040;
+}
+
+.brush-btn {
+	all: unset;
+	font-family: "Press Start 2P", sans-serif;
+	font-size: 18px;
+	border-style: solid;
+	width: 42px;
+	height: 28px;
+	text-align: center;
+	color: #808080;
+	background-color: #000000; border-color: #808080;
+}
+.brush-btn:active {
+	color: #e3e3e3;
+	border-color: #e3e3e3;
+}
