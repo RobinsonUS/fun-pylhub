@@ -1,43 +1,107 @@
-// ============================================================
-//  js/poids.js
-//
-//  Chargement silencieux des poids entraines.
-//  Rien ne s'affiche : en cas d'echec, le jeu tourne avec un
-//  cerveau aleatoire plutot que de casser.
-// ============================================================
+let POIDS = null;
+let ARCHI = null;
+let VARIANTE = null;
+const VARIANTES = {};
+let COUCHES_SR = null;
 
-const CLES_POIDS = ['dense', 'wz', 'uz', 'wr', 'ur', 'wh', 'uh',
-                    'tMouv', 'tVisee', 'tTir', 'tRech', 'tVal'];
+const TAILLE_MORCEAU = 20 * 1024 * 1024;
 
+// A incrementer chaque fois que les fichiers de poids changent.
+// Les .bin sont mis en cache pour un an (voir _headers) : sans ce
+// numero dans l'URL, les visiteurs garderaient l'ancienne version.
 const VERSION_POIDS = '2';
 
-function importeCerveau(meta, plat) {
-  const c = creeCerveau(1);
-  let o = 0;
-  for (const k of CLES_POIDS) {
-    c[k].w.set(plat.subarray(o, o + c[k].w.length)); o += c[k].w.length;
-    c[k].b.set(plat.subarray(o, o + c[k].b.length)); o += c[k].b.length;
+// Telecharge un .bin, decoupe ou non, avec progression.
+// octets : taille totale attendue, deduite du json.
+async function chargeBin(chemin, octets, progres) {
+  const nMorceaux = Math.ceil(octets / TAILLE_MORCEAU);
+  const sortie = new Uint8Array(octets);
+  let pos = 0;
+
+  for (let i = 0; i < nMorceaux; i++) {
+    const base = (nMorceaux === 1) ? chemin : chemin + '.' + i;
+    const url = base + '?v=' + VERSION_POIDS;
+
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(base + ' : HTTP ' + r.status);
+
+    const type = r.headers.get('content-type') || '';
+    if (type.includes('text/html')) {
+      throw new Error(base + " : le serveur renvoie une page HTML, le fichier n'existe pas");
+    }
+
+    const buf = new Uint8Array(await r.arrayBuffer());
+
+    if (buf.length < 1000) {
+      const apercu = new TextDecoder().decode(buf.subarray(0, 200));
+      throw new Error(base + ' : seulement ' + buf.length + ' octets. Contenu : ' + apercu);
+    }
+
+    sortie.set(buf, pos);
+    pos += buf.length;
+    if (progres) progres(pos, octets);
   }
-  return c;
+
+  if (pos !== octets)
+    throw new Error(chemin + ' : ' + pos + ' octets au lieu de ' + octets);
+
+  return sortie.buffer;
 }
 
-// renvoie le cerveau charge, ou null
-async function chargePoidsEntraines() {
-  try {
-    const rj = await fetch('poids.json');
-    if (!rj.ok) return null;
-    const meta = await rj.json();
+async function chargeVariante(cle, base, progres) {
+  const rj = await fetch('./modele/' + base + '.json?v=' + VERSION_POIDS);
+  if (!rj.ok) throw new Error(base + '.json : HTTP ' + rj.status);
+  const desc = await rj.json();
 
-    // architecture differente : les poids ne veulent rien dire
-    if (meta.nE && meta.nE !== tailleObservation()) return null;
+  const ab = await chargeBin('./modele/' + base + '.bin', desc.total * 4, progres);
+  const brut = new Float32Array(ab);
 
-    const rb = await fetch('poids.bin');
-    if (!rb.ok) return null;
-    const plat = new Float32Array(await rb.arrayBuffer());
-    if (plat.length !== meta.total) return null;
+  if (brut.length !== desc.total)
+    throw new Error(base + ' : ' + brut.length + ' au lieu de ' + desc.total);
 
-    return importeCerveau(meta, plat);
-  } catch (e) {
-    return null;
+  const p = {};
+  for (const t of desc.tenseurs) {
+    p[t.nom] = { donnees: brut.subarray(t.offset, t.offset + t.taille), forme: t.forme };
   }
+  VARIANTES[cle] = { poids: p, archi: desc.archi };
+  return desc;
+}
+
+function choisitVariante(cle) {
+  if (!VARIANTES[cle]) throw new Error('variante inconnue : ' + cle);
+  if (VARIANTE === cle) return;
+  libereVariante(VARIANTE);
+  VARIANTE = cle;
+  POIDS = VARIANTES[cle].poids;
+  ARCHI = VARIANTES[cle].archi;
+  PLAN = null;
+}
+
+async function chargePoidsSR(progres) {
+  const rj = await fetch('./modele/poids_sr.json?v=' + VERSION_POIDS);
+  if (!rj.ok) throw new Error('poids_sr.json : HTTP ' + rj.status);
+  const desc = await rj.json();
+
+  const ab = await chargeBin('./modele/poids_sr.bin', desc.total * 4, progres);
+  const brut = new Float32Array(ab);
+
+  if (brut.length !== desc.total) throw new Error('taille SR incoherente');
+
+  // les poids SR sont ajoutes a toutes les variantes
+  for (const cle of Object.keys(VARIANTES)) {
+    for (const t of desc.tenseurs) {
+      VARIANTES[cle].poids[t.nom] = {
+        donnees: brut.subarray(t.offset, t.offset + t.taille), forme: t.forme
+      };
+    }
+  }
+  COUCHES_SR = desc.couches;
+  return desc;
+}
+
+function empreinte(nom) {
+  const d = POIDS[nom].donnees;
+  let s = 0;
+  for (let i = 0; i < d.length; i++) s += Math.abs(d[i]);
+  return s;
 }
