@@ -668,7 +668,7 @@ async function chargeIcones() {
     for (const ext of EXTENSIONS) {
       for (const base of cheminsPossibles(nom, ext)) {
         try {
-          ICONES[nom] = await chargeUneImage(base + '?v=' + Date.now());
+          ICONES[nom] = await chargeUneImage(base);
           etat[nom] = 'ok';
           majEtat();
           return;
