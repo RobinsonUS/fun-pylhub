@@ -18,22 +18,21 @@ async function chargeBin(chemin, octets, progres) {
     const r = await fetch(url);
     if (!r.ok) throw new Error(url + ' : HTTP ' + r.status);
 
-    if (!r.body) {
-      const buf = new Uint8Array(await r.arrayBuffer());
-      sortie.set(buf, pos);
-      pos += buf.length;
-      if (progres) progres(pos, octets);
-      continue;
+    const type = r.headers.get('content-type') || '';
+    if (type.includes('text/html')) {
+      throw new Error(url + " : le serveur renvoie une page HTML, le fichier n'existe pas");
     }
 
-    const lecteur = r.body.getReader();
-    for (;;) {
-      const { done, value } = await lecteur.read();
-      if (done) break;
-      sortie.set(value, pos);
-      pos += value.length;
-      if (progres) progres(pos, octets);
+    const buf = new Uint8Array(await r.arrayBuffer());
+
+    if (buf.length < 1000) {
+      const apercu = new TextDecoder().decode(buf.subarray(0, 200));
+      throw new Error(url + ' : seulement ' + buf.length + ' octets. Contenu : ' + apercu);
     }
+
+    sortie.set(buf, pos);
+    pos += buf.length;
+    if (progres) progres(pos, octets);
   }
 
   if (pos !== octets)
