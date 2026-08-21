@@ -4,14 +4,52 @@ let VARIANTE = null;
 const VARIANTES = {};
 let COUCHES_SR = null;
 
-async function chargeVariante(cle, base) {
-  const rj = await fetch('modele/' + base + '.json?v=' + Date.now());
+const TAILLE_MORCEAU = 20 * 1024 * 1024;
+
+// Telecharge un .bin, decoupe ou non, avec progression.
+// octets : taille totale attendue, deduite du json.
+async function chargeBin(chemin, octets, progres) {
+  const nMorceaux = Math.ceil(octets / TAILLE_MORCEAU);
+  const sortie = new Uint8Array(octets);
+  let pos = 0;
+
+  for (let i = 0; i < nMorceaux; i++) {
+    const url = (nMorceaux === 1) ? chemin : chemin + '.' + i;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(url + ' : HTTP ' + r.status);
+
+    if (!r.body) {
+      const buf = new Uint8Array(await r.arrayBuffer());
+      sortie.set(buf, pos);
+      pos += buf.length;
+      if (progres) progres(pos, octets);
+      continue;
+    }
+
+    const lecteur = r.body.getReader();
+    for (;;) {
+      const { done, value } = await lecteur.read();
+      if (done) break;
+      sortie.set(value, pos);
+      pos += value.length;
+      if (progres) progres(pos, octets);
+    }
+  }
+
+  if (pos !== octets)
+    throw new Error(chemin + ' : ' + pos + ' octets au lieu de ' + octets);
+
+  return sortie.buffer;
+}
+
+async function chargeVariante(cle, base, progres) {
+  const rj = await fetch('./modele/' + base + '.json');
   if (!rj.ok) throw new Error(base + '.json : HTTP ' + rj.status);
   const desc = await rj.json();
 
-  const rb = await fetch('modele/' + base + '.bin?v=' + Date.now());
-  if (!rb.ok) throw new Error(base + '.bin : HTTP ' + rb.status);
-  const brut = new Float32Array(await rb.arrayBuffer());
+  const ab = await chargeBin('./modele/' + base + '.bin', desc.total * 4, progres);
+  const brut = new Float32Array(ab);
+
   if (brut.length !== desc.total)
     throw new Error(base + ' : ' + brut.length + ' au lieu de ' + desc.total);
 
@@ -33,14 +71,14 @@ function choisitVariante(cle) {
   PLAN = null;
 }
 
-async function chargePoidsSR() {
-  const rj = await fetch('modele/poids_sr.json?v=' + Date.now());
+async function chargePoidsSR(progres) {
+  const rj = await fetch('./modele/poids_sr.json');
   if (!rj.ok) throw new Error('poids_sr.json : HTTP ' + rj.status);
   const desc = await rj.json();
 
-  const rb = await fetch('modele/poids_sr.bin?v=' + Date.now());
-  if (!rb.ok) throw new Error('poids_sr.bin : HTTP ' + rb.status);
-  const brut = new Float32Array(await rb.arrayBuffer());
+  const ab = await chargeBin('./modele/poids_sr.bin', desc.total * 4, progres);
+  const brut = new Float32Array(ab);
+
   if (brut.length !== desc.total) throw new Error('taille SR incoherente');
 
   // les poids SR sont ajoutes a toutes les variantes
