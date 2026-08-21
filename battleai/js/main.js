@@ -3,11 +3,11 @@ let drag = null;
 const souris = { x: 0, y: 0, vu: false, enfonce: false };
 let partie = null;
 const MOI = 0;
-let demandeAbandon = false;
 let slotVoulu = 1;                 // le moteur applique ce choix, pas nous
 
-const memoireMoi = creeMemoire();
-let derniereObs = null;
+let cerveauIA = null;              // survit aux parties
+let agentIA = null;
+let iaDeterministe = false;
 
 function slotSousPointeur(x, y) {
   for (const z of zonesInv()) {
@@ -17,30 +17,24 @@ function slotSousPointeur(x, y) {
 }
 
 // ---------- clavier ----------
+// les fleches et ZQSD pilotent le meme personnage
+function toucheDeplacement(code, key) {
+  if (code === 'KeyZ' || key === 'z' || code === 'ArrowUp')    return 'haut';
+  if (code === 'KeyS' || key === 's' || code === 'ArrowDown')  return 'bas';
+  if (code === 'KeyQ' || key === 'q' || code === 'ArrowLeft')  return 'gauche';
+  if (code === 'KeyD' || key === 'd' || code === 'ArrowRight') return 'droite';
+  if (code === 'Space' || key === ' ') return 'espace';
+  return null;
+}
+
 window.addEventListener('keydown', (e) => {
   const code = e.code;
   const key = (e.key || '').toLowerCase();
 
-  if (code === 'KeyT' || key === 't') { e.preventDefault(); testGradients(); return; }
-  if (code === 'KeyY' || key === 'y') { e.preventDefault(); testVitesse();  return; }
-  if (code === 'KeyU' || key === 'u') { e.preventDefault(); pasEntrainementAffiche(); return; }
-  if (code === 'KeyM' || key === 'm') {
-    e.preventDefault();
-    iaDeterministe = !iaDeterministe;
-    dit(iaDeterministe ? 'IA : meilleure action' : 'IA : tirage aleatoire');
-    return;
-  }
-
-  if (code === 'KeyO' || key === 'o') {
-    e.preventDefault();
-    debugActif = !debugActif;
-    return;
-  }
-
+  // Entree ne relance que si la partie est terminee : jamais d'abandon
   if (code === 'Enter' || key === 'enter') {
     e.preventDefault();
-    if (partie && !partie.fini) demandeAbandon = true;
-    else nouvelle();
+    if (partie && partie.fini) nouvelle();
     return;
   }
 
@@ -58,15 +52,7 @@ window.addEventListener('keydown', (e) => {
     return;
   }
 
-  let t = null;
-  if (code === 'KeyZ' || key === 'z') t = 'z';
-  else if (code === 'KeyQ' || key === 'q') t = 'q';
-  else if (code === 'KeyS' || key === 's') t = 's';
-  else if (code === 'KeyD' || key === 'd') t = 'd';
-  else if (code === 'KeyN' || key === 'n') t = 'n';
-  else if (code === 'Space' || key === ' ') t = 'espace';
-  else if (code.startsWith('Arrow')) t = code;
-
+  const t = toucheDeplacement(code, key);
   if (t) { e.preventDefault(); touches[t] = true; }
 });
 
@@ -76,15 +62,7 @@ window.addEventListener('keyup', (e) => {
 
   if (code === 'KeyR' || key === 'r') { touches['r'] = false; return; }
 
-  let t = null;
-  if (code === 'KeyZ' || key === 'z') t = 'z';
-  else if (code === 'KeyQ' || key === 'q') t = 'q';
-  else if (code === 'KeyS' || key === 's') t = 's';
-  else if (code === 'KeyD' || key === 'd') t = 'd';
-  else if (code === 'KeyN' || key === 'n') t = 'n';
-  else if (code === 'Space' || key === ' ') t = 'espace';
-  else if (code.startsWith('Arrow')) t = code;
-
+  const t = toucheDeplacement(code, key);
   if (t) touches[t] = false;
 });
 
@@ -171,60 +149,34 @@ document.addEventListener('visibilitychange', () => {
 // ---------- actions ----------
 function actionJoueur() {
   let mx = 0, my = 0;
-  if (touches['q']) mx -= 1;
-  if (touches['d']) mx += 1;
-  if (touches['z']) my -= 1;
-  if (touches['s']) my += 1;
+  if (touches['gauche']) mx -= 1;
+  if (touches['droite']) mx += 1;
+  if (touches['haut'])   my -= 1;
+  if (touches['bas'])    my += 1;
 
   let angle = partie.agents[MOI].angle;
   if (souris.vu)
     angle = Math.atan2(souris.y - ecranJoueur.y, souris.x - ecranJoueur.x);
-
-  const abandon = demandeAbandon;
-  demandeAbandon = false;
 
   return {
     mx, my, angle,
     slot: slotVoulu,
     recharger: !!touches['r'],
     tire: (souris.enfonce || !!touches['espace']) && !drag,
-    abandon,
+    abandon: false,
   };
 }
 
-// en mode debogage, les fleches pilotent le second joueur et N le fait tirer
 function actionSecond() {
-  if (debugActif) {
-    // en debogage, les fleches pilotent le second joueur et N le fait tirer
-    let mx = 0, my = 0;
-    if (touches['ArrowLeft'])  mx -= 1;
-    if (touches['ArrowRight']) mx += 1;
-    if (touches['ArrowUp'])    my -= 1;
-    if (touches['ArrowDown'])  my += 1;
-    const a = partie.agents[MOI], e = partie.agents[1];
-    return {
-      mx, my,
-      angle: Math.atan2(a.y - e.y, a.x - e.x),
-      tire: !!touches['n'],
-      recharger: false,
-    };
-  }
   return agitIA(agentIA, partie, 1);
 }
 
-let cerveauIA = null;          // survit aux parties
-let agentIA = null;
-let iaDeterministe = false;    // touche M : la meilleure action au lieu d'un tirage
-
 function nouvelle() {
   drag = null;
-  demandeAbandon = false;
   slotVoulu = 1;
   partie = creePartie();
   if (!cerveauIA) cerveauIA = creeCerveau();
   agentIA = creeAgentIA(cerveauIA, 1);
-  Object.assign(memoireMoi, creeMemoire());
-  derniereObs = null;
   cam.x = partie.agents[MOI].x;
   cam.y = partie.agents[MOI].y;
   ecranJoueur.x = LARG / 2;
@@ -247,15 +199,7 @@ function boucle(maintenant) {
   }
 
   if (partie) {
-    try {
-      derniereObs = observe(partie, MOI, memoireMoi);
-    } catch (err) {
-      derniereObs = null;
-      if (typeof montreErr === 'function') montreErr('observe : ' + err.message);
-    }
-
     dessine(partie, MOI, souris.vu ? souris : null, drag);
-    dessineDebug(partie, MOI, derniereObs);
 
     if (partie.fini) {
       repereEcran();
@@ -268,13 +212,17 @@ function boucle(maintenant) {
                 : partie.vainqueur === -1 ? 'Match nul' : 'Defaite';
       ctx.fillText(txt, LARG / 2, HAUT / 2);
       ctx.font = '400 16px system-ui, sans-serif';
-      ctx.fillText('Appuyez sur Entree pour respawn', LARG / 2, HAUT / 2 + 32);
+      ctx.fillText('Appuyez sur Entree pour rejouer', LARG / 2, HAUT / 2 + 32);
       ctx.textAlign = 'left';
     }
   }
 }
 
+// ---------- demarrage ----------
 initRendu();
 prendFocus();
-nouvelle();
-requestAnimationFrame(boucle);
+(async () => {
+  cerveauIA = await chargePoidsEntraines();
+  nouvelle();
+  requestAnimationFrame(boucle);
+})();
