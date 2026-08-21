@@ -1,0 +1,14 @@
+/*.bin
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.bin.0
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.bin.1
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.bin.2
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.bin.3
+  Cache-Control: public, max-age=31536000, immutable
