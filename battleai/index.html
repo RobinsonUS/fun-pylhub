@@ -16,11 +16,35 @@
   #err { position: fixed; left: 0; right: 0; top: 0; z-index: 9;
          background: #300; color: #fca; font: 12px ui-monospace, monospace;
          padding: 8px; white-space: pre-wrap; display: none; }
+  #aide { position: fixed; left: 50%; transform: translateX(-50%);
+          bottom: 14px; z-index: 8;
+          background: rgba(0, 0, 0, 0.42);
+          color: rgba(255, 255, 255, 0.88);
+          font: 14px system-ui, -apple-system, sans-serif;
+          padding: 8px 16px; border-radius: 999px;
+          white-space: nowrap; pointer-events: none;
+          backdrop-filter: blur(4px); }
+  #aide b { color: #fff; font-weight: 600; }
+  #retour { position: fixed; left: 14px; top: 12px; z-index: 8;
+            color: rgba(255, 255, 255, 0.65);
+            font: 14px system-ui, sans-serif; text-decoration: none;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 6px 12px; border-radius: 999px; }
+  @media (max-width: 640px) {
+    #aide { font-size: 12px; padding: 7px 12px; white-space: normal;
+            max-width: 92vw; text-align: center; border-radius: 14px; }
+  }
 </style>
 </head>
 <body>
 <pre id="err"></pre>
+<a id="retour" href="../">← retour</a>
 <canvas id="jeu" tabindex="0" autofocus></canvas>
+<div id="aide">
+  Déplacement <b>ZQSD</b> ou <b>flèches</b> &nbsp;·&nbsp;
+  Recharger <b>R</b> &nbsp;·&nbsp;
+  Viser et tirer à la <b>souris</b>
+</div>
 <script>
   const zoneErr = document.getElementById('err');
   function montreErr(t) {
@@ -29,26 +53,22 @@
   }
   window.montreErr = montreErr;
   window.onerror = (msg, src, l) => montreErr('ERREUR ligne ' + l + ' : ' + msg);
-
   (async () => {
-    const f = ['config', 'moteur', 'observation', 'cerveau', 'recompense',
-               'collecte', 'gradients', 'entrainement', 'tests',
-               'rendu', 'debug', 'main'];
+    const f = ['config', 'moteur', 'observation', 'cerveau',
+               'rendu', 'poids', 'main'];
     for (const n of f) {
       let txt;
       try {
-        const r = await fetch('js/' + n + '.js?v=' + Date.now());
+        const r = await fetch('js/' + n + '.js');
         if (!r.ok) { montreErr(n + '.js : HTTP ' + r.status); return; }
         txt = await r.text();
       } catch (e) { montreErr(n + '.js : ' + e.message); return; }
-
-      // Koder repond 200 avec une page HTML quand le fichier n'existe
-      // pas : sans ce controle, on injecterait du HTML comme du script
+      // certains serveurs repondent 200 avec une page HTML quand le
+      // fichier n'existe pas : sans ce controle on injecterait du HTML
       if (/^\s*</.test(txt)) {
         montreErr(n + '.js : FICHIER ABSENT (le serveur a renvoye du HTML)');
         return;
       }
-
       const el = document.createElement('script');
       el.textContent = txt;
       document.body.appendChild(el);
