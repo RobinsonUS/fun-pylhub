@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Duel</title>
+<style>
+  html, body { margin: 0; padding: 0; overflow: hidden; height: 100%;
+               background: #26331b;
+               display: flex; align-items: center; justify-content: center;
+               -webkit-user-select: none; user-select: none;
+               -webkit-tap-highlight-color: transparent;
+               cursor: none; }
+  * { cursor: none !important; }
+  #jeu { display: block; outline: none; }
+  #err { position: fixed; left: 0; right: 0; top: 0; z-index: 9;
+         background: #300; color: #fca; font: 12px ui-monospace, monospace;
+         padding: 8px; white-space: pre-wrap; display: none; }
+</style>
+</head>
+<body>
+<pre id="err"></pre>
+<canvas id="jeu" tabindex="0" autofocus></canvas>
+<script>
+  const zoneErr = document.getElementById('err');
+  function montreErr(t) {
+    zoneErr.style.display = 'block';
+    zoneErr.textContent += t + '\n';
+  }
+  window.montreErr = montreErr;
+  window.onerror = (msg, src, l) => montreErr('ERREUR ligne ' + l + ' : ' + msg);
+
+  (async () => {
+    const f = ['config', 'moteur', 'observation', 'cerveau', 'recompense',
+               'collecte', 'gradients', 'entrainement', 'tests',
+               'rendu', 'debug', 'main'];
+    for (const n of f) {
+      let txt;
+      try {
+        const r = await fetch('js/' + n + '.js?v=' + Date.now());
+        if (!r.ok) { montreErr(n + '.js : HTTP ' + r.status); return; }
+        txt = await r.text();
+      } catch (e) { montreErr(n + '.js : ' + e.message); return; }
+
+      // Koder repond 200 avec une page HTML quand le fichier n'existe
+      // pas : sans ce controle, on injecterait du HTML comme du script
+      if (/^\s*</.test(txt)) {
+        montreErr(n + '.js : FICHIER ABSENT (le serveur a renvoye du HTML)');
+        return;
+      }
+
+      const el = document.createElement('script');
+      el.textContent = txt;
+      document.body.appendChild(el);
+    }
+    document.getElementById('jeu').focus({ preventScroll: true });
+  })();
+</script>
+</body>
+</html>
