@@ -60,7 +60,7 @@
 
   .accroche {
     margin-top: 26px;
-    font-size: clamp(17px, 4vw, 21px);
+    font-size: clamp(16px, 3.6vw, 19px);
     font-weight: 500;
     color: var(--gris);
     line-height: 1.5;
@@ -93,39 +93,34 @@
   }
 
   .vignette {
-    aspect-ratio: 16 / 10;
+    aspect-ratio: 16 / 9;
     border-bottom: 4px solid var(--trait);
     background-size: cover;
     background-position: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 58px;
+    background-repeat: no-repeat;
+    background-color: #e8e2d8;
   }
-  .v1 { background-image: linear-gradient(160deg, #ffd79a, #ff9f68 55%, #7d6bd8); }
-  .v2 { background-image: linear-gradient(160deg, #b7f2c4, #4fbf7d 55%, #1d6b52); }
-  .v3 { background-image: linear-gradient(160deg, #cfe4ff, #7fa8e8 55%, #b48a5f); }
 
-  .corps { padding: 20px 22px 24px; flex: 1; display: flex; flex-direction: column; }
+  .corps { padding: 18px 20px 22px; flex: 1; display: flex; flex-direction: column; }
 
   .carte h2 {
-    font-size: 25px;
+    font-size: 23px;
     font-weight: 600;
     letter-spacing: -.02em;
-    margin-bottom: 8px;
+    margin-bottom: 7px;
   }
   .carte p {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 400;
     color: var(--gris);
-    line-height: 1.55;
+    line-height: 1.5;
     flex: 1;
   }
 
   .tag {
     align-self: flex-start;
-    margin-top: 16px;
-    font-size: 13px;
+    margin-top: 15px;
+    font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: .07em;
@@ -166,7 +161,7 @@
 <main>
 
   <a class="carte" href="./paysages/">
-    <div class="vignette v1">🏔️</div>
+    <div class="vignette" style="background-image:url('./img/paysages.jpg')"></div>
     <div class="corps">
       <h2>Paysages infinis</h2>
       <p>Un réseau de neurones entraîné sur 90 000 photos, qui dessine des lieux qui n'existent nulle part. Il tourne sur votre appareil, même hors connexion.</p>
@@ -175,16 +170,16 @@
   </a>
 
   <a class="carte" href="./battleai/">
-    <div class="vignette v2">🎯</div>
+    <div class="vignette" style="background-image:url('./img/battleai.jpg')"></div>
     <div class="corps">
       <h2>Duel d'IA</h2>
-            <p>Deux intelligences artificielles enfermées dans une arène pendant deux mille générations. Personne ne leur a appris à viser, ni à tendre une embuscade. À vous de tenter votre chance !</p>
+      <p>Deux intelligences artificielles enfermées dans une arène pendant deux mille générations. Personne ne leur a appris à viser, ni à tendre une embuscade. À vous de tenter votre chance !</p>
       <span class="tag">Combattre</span>
     </div>
   </a>
 
   <a class="carte" href="./sandbox/">
-    <div class="vignette v3">🧊</div>
+    <div class="vignette" style="background-image:url('./img/sandbox.jpg')"></div>
     <div class="corps">
       <h2>Bac à sable 3D</h2>
       <p>Du sable, de l'eau, de la roche, de la boue. Des milliers de cubes qui regardent leurs voisins soixante fois par seconde, et un monde qui s'écroule.</p>
