@@ -9,6 +9,8 @@
 const CLES_POIDS = ['dense', 'wz', 'uz', 'wr', 'ur', 'wh', 'uh',
                     'tMouv', 'tVisee', 'tTir', 'tRech', 'tVal'];
 
+const VERSION_POIDS = '2';
+
 function importeCerveau(meta, plat) {
   const c = creeCerveau(1);
   let o = 0;
