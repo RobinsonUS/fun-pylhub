@@ -21,19 +21,17 @@
   #choix canvas { width: 80px; height: 80px; image-rendering: pixelated;
                   border: 2px solid transparent; }
   #choix canvas:active { border-color: #f5c451; }
+  #retour { display: inline-block; margin-bottom: 12px; color: #444; }
 </style>
 </head>
 <body>
+
+<a id="retour" href="../">← retour</a>
 
 <canvas id="vue"></canvas>
 <div id="choix"></div>
 
 <div class="ligne">
-  <span>Modèle</span>
-  <select id="variante">
-    <option value="ema" selected>EMA (lisse)</option>
-    <option value="brut">Brut (contrasté)</option>
-  </select>
   <label><input type="checkbox" id="multi"> choisir parmi 5</label>
 </div>
 
@@ -133,7 +131,6 @@ function attendreImage() { return new Promise(r => requestAnimationFrame(r)); }
 function majBoutons() {
   const occupe = enCours && !enPause;
   $('go').disabled = false;
-  $('variante').disabled = occupe;
   $('theme').disabled = occupe;
   $('multi').disabled = occupe;
   $('graine').disabled = occupe;
@@ -202,7 +199,7 @@ async function phaseCandidats(opts) {
     sessions.push(creeSession({ ...opts, graine: (Math.random() * 1e9) | 0 }));
   }
 
-  // on affiche le bruit de depart : les six vignettes sont cliquables tout de suite
+  // on affiche le bruit de depart : les vignettes sont cliquables tout de suite
   for (let k = 0; k < 5; k++) peint(k, sessions[k].x);
   etat.textContent = 'apercus — touche une image quand tu veux';
 
@@ -233,10 +230,6 @@ $('etapes').oninput = () => {
 };
 $('influence').oninput = () => { $('influenceVal').textContent = $('influence').value; };
 $('de').onclick = () => { $('graine').value = (Math.random() * 1e9) | 0; };
-$('variante').onchange = () => {
-  choisitVariante($('variante').value);
-  etat.textContent = 'modele ' + $('variante').value + ' actif';
-};
 
 function optionsCourantes() {
   const g = $('graine').value.trim();
@@ -323,23 +316,31 @@ $('up').onclick = async () => {
 };
 
 $('save').onclick = () => {
-  hors.toBlob((b) => {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(b);
-    a.download = 'paysage_' + Date.now() + '.png';
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  }, 'image/png');
+  // toDataURL est synchrone : le lien avec le geste utilisateur est preserve,
+  // sinon Safari iOS bloque le telechargement
+  const a = document.createElement('a');
+  a.href = hors.toDataURL('image/png');
+  a.download = 'paysage_' + Date.now() + '.png';
+  a.click();
 };
 
 // ---------- demarrage ----------
 (async () => {
+  const mo = (o) => (o / 1048576).toFixed(1);
+  const barre = (etiquette) => (recu, total) => {
+    etat.textContent = etiquette + ' ' + mo(recu) + ' / ' + mo(total) + ' Mo';
+  };
+
   try {
+    if (!navigator.gpu) {
+      etat.textContent =
+        "Ce navigateur ne gere pas WebGPU. Essaie Chrome, ou Safari sur iOS 18 et plus " +
+        "(Reglages > Apps > Safari > Avance > Fonctionnalites experimentales > WebGPU).";
+      return;
+    }
     await initGPU();
-    etat.textContent = 'chargement du modele EMA...';
-    await chargeVariante('ema', 'poids_ema');
-    etat.textContent = 'chargement du modele brut...';
-    await chargeVariante('brut', 'poids_brut');
+
+    await chargeVariante('ema', 'poids_ema', barre('chargement du modele'));
     choisitVariante('ema');
     S = ARCHI.taille;
 
@@ -352,8 +353,7 @@ $('save').onclick = () => {
     dernH = S; dernW = S;
     dessine(derniere, S, S, 'signe');
 
-    etat.textContent = 'chargement de l\'agrandisseur...';
-    await chargePoidsSR();
+    await chargePoidsSR(barre("chargement de l'agrandisseur"));
 
     majBoutons();
     etat.textContent = 'pret — estimation ' + ($('etapes').value * SEC).toFixed(0) + ' s';
