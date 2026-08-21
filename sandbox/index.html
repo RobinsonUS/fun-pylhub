@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="fr">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+		<link rel="stylesheet" href="style.css">
+		<title>Sandbox 3D</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+		<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+	</head>
+	<body>
+		<div id="game-container"></div>
+		<div id="tools">
+			<div id="tools-controls">
+				<button data-action="decrease" class="brush-btn">-</button>
+				<button data-action="increase" class="brush-btn">+</button>
+				<button data-mode="destroy" class="tool">Erase</button>
+				<button data-mode="drag" class="tool">Drag</button>
+				<button id="reset-btn" class="tool">Reset</button>
+			</div>
+			<div id="tools-elements">
+				<button data-el="sand" class="tool tool-el active">Sand</button>
+				<button data-el="wetSand" class="tool tool-el">WetSand</button>
+				<button data-el="dirt" class="tool tool-el">Dirt</button>
+				<button data-el="mud" class="tool tool-el">Mud</button>
+				<button data-el="rock" class="tool tool-el">Rock</button>
+				<button data-el="water" class="tool tool-el">Water</button>
+			</div>
+		</div>
+		<script src="js/script.js"></script>
+	</body>
+</html>
