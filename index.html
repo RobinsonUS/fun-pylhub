@@ -1,366 +1,203 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Paysages</title>
+<title>PyLab fun</title>
+<meta name="description" content="Trois projets codés sur une tablette. Générateur de paysages, IA qui apprennent à s'affronter, bac à sable 3D.">
+<meta property="og:title" content="PyLab fun">
+<meta property="og:description" content="Trois projets codés sur une tablette, sans ordinateur.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  body { margin: 0; padding: 16px; font: 16px system-ui, -apple-system, sans-serif; }
-  #vue { display: block; width: 100%; max-width: 512px; image-rendering: pixelated; }
-  .ligne { display: flex; align-items: center; gap: 10px;
-           margin-top: 10px; max-width: 512px; flex-wrap: wrap; }
-  .ligne > span { min-width: 70px; }
-  input[type=range] { flex: 1; min-width: 120px; }
-  select, input[type=number] { font: inherit; padding: 8px; min-height: 40px; }
-  input[type=number] { width: 140px; }
-  button { font: inherit; padding: 10px 16px; min-height: 44px;
-           touch-action: manipulation; }
-  button:disabled { opacity: .35; }
-  #etat { margin-top: 10px; font-variant-numeric: tabular-nums; min-height: 1.4em; }
-  #choix { display: none; gap: 6px; flex-wrap: wrap; max-width: 512px; margin-top: 10px; }
-  #choix canvas { width: 80px; height: 80px; image-rendering: pixelated;
-                  border: 2px solid transparent; }
-  #choix canvas:active { border-color: #f5c451; }
+  :root {
+    --fond: #fdf8f0;
+    --encre: #1f1b16;
+    --gris: #6b625a;
+    --trait: #1f1b16;
+    --ombre: 6px 6px 0 var(--trait);
+    --ombre-hover: 10px 10px 0 var(--trait);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--fond);
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(255, 206, 122, .35), transparent 42%),
+      radial-gradient(circle at 88% 10%, rgba(140, 200, 255, .32), transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(190, 245, 200, .30), transparent 45%);
+    color: var(--encre);
+    font-family: 'Fredoka', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    padding: 48px 20px 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  header { text-align: center; max-width: 640px; margin-bottom: 52px; }
+
+  .logo {
+    display: inline-block;
+    font-size: clamp(46px, 11vw, 82px);
+    font-weight: 700;
+    letter-spacing: -.03em;
+    line-height: 1;
+    padding: 6px 22px 10px;
+    background: #fff;
+    border: 4px solid var(--trait);
+    border-radius: 22px;
+    box-shadow: var(--ombre);
+    transform: rotate(-2deg);
+    text-decoration: none;
+    color: var(--encre);
+    transition: transform .18s ease;
+  }
+  .logo:hover, .logo:active { transform: rotate(-2deg) scale(1.03); }
+  .logo em { font-style: normal; color: #e8792b; }
+
+  .accroche {
+    margin-top: 26px;
+    font-size: clamp(17px, 4vw, 21px);
+    font-weight: 500;
+    color: var(--gris);
+    line-height: 1.5;
+  }
+  .accroche strong { color: var(--encre); font-weight: 600; }
+
+  main {
+    width: 100%;
+    max-width: 1020px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+  }
+
+  .carte {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 4px solid var(--trait);
+    border-radius: 24px;
+    box-shadow: var(--ombre);
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .carte:hover, .carte:active {
+    transform: translate(-4px, -4px);
+    box-shadow: var(--ombre-hover);
+  }
+
+  .vignette {
+    aspect-ratio: 16 / 10;
+    border-bottom: 4px solid var(--trait);
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 58px;
+  }
+  .v1 { background-image: linear-gradient(160deg, #ffd79a, #ff9f68 55%, #7d6bd8); }
+  .v2 { background-image: linear-gradient(160deg, #b7f2c4, #4fbf7d 55%, #1d6b52); }
+  .v3 { background-image: linear-gradient(160deg, #cfe4ff, #7fa8e8 55%, #b48a5f); }
+
+  .corps { padding: 20px 22px 24px; flex: 1; display: flex; flex-direction: column; }
+
+  .carte h2 {
+    font-size: 25px;
+    font-weight: 600;
+    letter-spacing: -.02em;
+    margin-bottom: 8px;
+  }
+  .carte p {
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--gris);
+    line-height: 1.55;
+    flex: 1;
+  }
+
+  .tag {
+    align-self: flex-start;
+    margin-top: 16px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    padding: 5px 12px;
+    border: 2.5px solid var(--trait);
+    border-radius: 999px;
+    background: #ffe9a8;
+  }
+
+  footer {
+    margin-top: 64px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--gris);
+    line-height: 1.9;
+  }
+  footer a { color: var(--encre); font-weight: 600; text-decoration: none; border-bottom: 2.5px solid #e8792b; }
+  footer a:hover { background: #ffe9a8; }
+
+  @media (max-width: 520px) {
+    body { padding: 34px 16px 60px; }
+    header { margin-bottom: 38px; }
+    main { gap: 24px; }
+  }
 </style>
 </head>
 <body>
 
-<canvas id="vue"></canvas>
-<div id="choix"></div>
+<header>
+  <a class="logo" href="https://pylhub.com">Py<em>Lab</em></a>
+  <p class="accroche">
+    Trois projets codés <strong>sans ordinateur</strong>, sur une tablette.<br>
+    Tout tourne directement dans votre navigateur.
+  </p>
+</header>
 
-<div class="ligne">
-  <span>Modèle</span>
-  <select id="variante">
-    <option value="ema" selected>EMA (lisse)</option>
-    <option value="brut">Brut (contrasté)</option>
-  </select>
-  <label><input type="checkbox" id="multi"> choisir parmi 5</label>
-</div>
+<main>
 
-<div class="ligne">
-  <span>Thème</span>
-  <select id="theme">
-    <option value="aucun" selected>aucun</option>
-    <option value="foret">forêt</option>
-    <option value="montagne">montagne</option>
-    <option value="desert">désert</option>
-    <option value="ocean">océan</option>
-    <option value="coucher">coucher de soleil</option>
-    <option value="neige">neige</option>
-    <option value="nuit">nuit</option>
-    <option value="prairie">prairie</option>
-  </select>
-</div>
+  <a class="carte" href="./paysages/">
+    <div class="vignette v1">🏔️</div>
+    <div class="corps">
+      <h2>Paysages infinis</h2>
+      <p>Un réseau de neurones entraîné sur 90 000 photos, qui dessine des lieux qui n'existent nulle part. Il tourne sur votre appareil, même hors connexion.</p>
+      <span class="tag">Générer</span>
+    </div>
+  </a>
 
-<div class="ligne">
-  <span>Influence</span>
-  <input type="range" id="influence" min="0" max="100" value="30">
-  <output id="influenceVal">30</output>
-</div>
+  <a class="carte" href="./battleai/">
+    <div class="vignette v2">🎯</div>
+    <div class="corps">
+      <h2>Duel d'IA</h2>
+      <p>Deux intelligences artificielles enfermées dans une arène pendant deux mille générations. Personne ne leur a appris à viser, ni à tendre une embuscade.</p>
+      <span class="tag">Regarder</span>
+    </div>
+  </a>
 
-<div class="ligne">
-  <span>Étapes</span>
-  <input type="range" id="etapes" min="10" max="200" value="50">
-  <output id="etapesVal">50</output>
-</div>
+  <a class="carte" href="./sandbox/">
+    <div class="vignette v3">🧊</div>
+    <div class="corps">
+      <h2>Bac à sable 3D</h2>
+      <p>Du sable, de l'eau, de la roche, de la boue. Des milliers de cubes qui regardent leurs voisins soixante fois par seconde, et un monde qui s'écroule.</p>
+      <span class="tag">Construire</span>
+    </div>
+  </a>
 
-<div class="ligne">
-  <span>Graine</span>
-  <input type="number" id="graine" placeholder="aléatoire">
-  <button id="de">Dé</button>
-</div>
+</main>
 
-<div class="ligne">
-  <button id="go">Générer</button>
-  <button id="pause">Reprendre</button>
-</div>
+<footer>
+  Fait par <a href="https://youtube.com/@PyLab-officiel">PyLab</a> pendant l'été 2026<br>
+  <a href="https://pylhub.com">pylhub.com</a>
+</footer>
 
-<div class="ligne">
-  <button id="up" disabled>Agrandir ×4</button>
-  <button id="save" disabled>Enregistrer</button>
-</div>
-
-<div id="etat">chargement...</div>
-
-<script src="js/poids.js"></script>
-<script src="js/gpu.js"></script>
-<script src="js/couches.js"></script>
-<script src="js/echantillon.js"></script>
-<script>
-const $ = (id) => document.getElementById(id);
-const vue = $('vue'), ctx = vue.getContext('2d');
-const etat = $('etat'), zoneChoix = $('choix');
-
-let hors, hctx;
-let S = 128;
-let session = null;
-let derniere = null, dernH = 128, dernW = 128;
-let enCours = false, enPause = false, annule = false;
-let agrandie = false;
-
-const SEC = 3.3;
-const APERCU = 3;        // etapes generees pour chaque candidat
-const T_REPRISE = 400;   // instant de rebruitage lors d'une reprise
-const FORCE_MAX = 1.0;
-
-// ---------- affichage ----------
-function dessine(tab, H, W, plage) {
-  if (hors.width !== W || hors.height !== H) { hors.width = W; hors.height = H; }
-  const img = hctx.createImageData(W, H);
-  const hw = H * W;
-  const a = (plage === 'unite') ? 255 : 127.5;
-  const b = (plage === 'unite') ? 0 : 127.5;
-  for (let i = 0; i < hw; i++) {
-    img.data[i * 4]     = tab[i] * a + b;
-    img.data[i * 4 + 1] = tab[hw + i] * a + b;
-    img.data[i * 4 + 2] = tab[2 * hw + i] * a + b;
-    img.data[i * 4 + 3] = 255;
-  }
-  hctx.putImageData(img, 0, 0);
-  const larg = vue.clientWidth;
-  const haut = Math.round(larg * H / W);
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  vue.width = Math.round(larg * dpr);
-  vue.height = Math.round(haut * dpr);
-  vue.style.height = haut + 'px';
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(hors, 0, 0, larg, haut);
-}
-
-function attendreImage() { return new Promise(r => requestAnimationFrame(r)); }
-
-function majBoutons() {
-  const occupe = enCours && !enPause;
-  $('go').disabled = false;
-  $('variante').disabled = occupe;
-  $('theme').disabled = occupe;
-  $('multi').disabled = occupe;
-  $('graine').disabled = occupe;
-  $('de').disabled = occupe;
-  $('influence').disabled = occupe;
-
-  $('pause').textContent = occupe ? 'Pause' : 'Reprendre';
-  $('pause').disabled = agrandie || !derniere;
-
-  $('up').disabled   = enCours || !derniere || agrandie;
-  $('save').disabled = enCours || !derniere;
-}
-
-// ---------- boucle ----------
-async function derouler(s, etiquette) {
-  enCours = true; enPause = false; agrandie = false;
-  majBoutons();
-  const t0 = performance.now();
-
-  while (!sessionFinie(s) && !annule) {
-    if (enPause) { await attendreImage(); continue; }
-    const x0 = await pasSession(s);
-    derniere = x0; dernH = s.H; dernW = s.W;
-    dessine(x0, s.H, s.W, 'signe');
-    etat.textContent = (etiquette ? etiquette + '  ' : '') +
-      'etape ' + s.i + ' / ' + s.suite.length +
-      '   t=' + s.suite[Math.min(s.i, s.suite.length - 1)] +
-      '   ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s' +
-      '   graine ' + s.graine;
-    await attendreImage();
-  }
-
-  enCours = false; enPause = false;
-  majBoutons();
-  if (sessionFinie(s) && !annule)
-    etat.textContent = 'termine en ' + ((performance.now() - t0) / 1000).toFixed(1) +
-                       ' s   graine ' + s.graine;
-  annule = false;
-}
-
-// ---------- candidats ----------
-async function phaseCandidats(opts) {
-  zoneChoix.style.display = 'flex';
-  zoneChoix.innerHTML = '';
-  const sessions = [], toiles = [];
-  let choisi = null, resoudre;
-  const attente = new Promise(r => { resoudre = r; });
-
-  const peint = (k, tab) => {
-    toiles[k].getContext('2d').putImageData(
-      new ImageData(versPixels(tab, opts.H, opts.W), opts.W, opts.H), 0, 0);
-  };
-
-  for (let k = 0; k < 5; k++) {
-    const c = document.createElement('canvas');
-    c.width = opts.W; c.height = opts.H;
-    c.onclick = () => {
-      if (choisi !== null) return;
-      choisi = k;
-      zoneChoix.style.display = 'none';
-      zoneChoix.innerHTML = '';
-      resoudre(sessions[k]);
-    };
-    zoneChoix.appendChild(c);
-    toiles.push(c);
-    sessions.push(creeSession({ ...opts, graine: (Math.random() * 1e9) | 0 }));
-  }
-
-  // on affiche le bruit de depart : les six vignettes sont cliquables tout de suite
-  for (let k = 0; k < 5; k++) peint(k, sessions[k].x);
-  etat.textContent = 'apercus — touche une image quand tu veux';
-
-  (async () => {
-    for (let pas = 0; pas < APERCU; pas++) {
-      for (let k = 0; k < 5; k++) {
-        if (choisi !== null) return;
-        if (annule) { resoudre(null); return; }
-        const x0 = await pasSession(sessions[k]);
-        if (choisi !== null) return;
-        peint(k, x0);
-        etat.textContent = 'apercus ' + (pas * 5 + k + 1) + ' / ' + (5 * APERCU) +
-                           ' — touche une image quand tu veux';
-        await attendreImage();
-      }
-    }
-    while (choisi === null && !annule) await attendreImage();
-    if (annule) resoudre(null);
-  })();
-
-  return attente;
-}
-
-// ---------- controles ----------
-$('etapes').oninput = () => {
-  $('etapesVal').textContent = $('etapes').value;
-  if (!enCours) etat.textContent = 'estimation ' + ($('etapes').value * SEC).toFixed(0) + ' s';
-};
-$('influence').oninput = () => { $('influenceVal').textContent = $('influence').value; };
-$('de').onclick = () => { $('graine').value = (Math.random() * 1e9) | 0; };
-$('variante').onchange = () => {
-  choisitVariante($('variante').value);
-  etat.textContent = 'modele ' + $('variante').value + ' actif';
-};
-
-function optionsCourantes() {
-  const g = $('graine').value.trim();
-  return {
-    H: S, W: S,
-    etapes: +$('etapes').value,
-    theme: $('theme').value,
-    influence: (+$('influence').value / 100) * FORCE_MAX,
-    graine: g === '' ? null : (+g | 0),
-  };
-}
-
-$('go').onclick = async () => {
-  if (enCours) { annule = true; enPause = false; await attendreImage(); await attendreImage(); }
-  annule = false; agrandie = false;
-  const opts = optionsCourantes();
-  try {
-    if ($('multi').checked) {
-      enCours = true; majBoutons();
-      const s = await phaseCandidats(opts);
-      enCours = false;
-      if (!s) { majBoutons(); return; }
-      session = s;
-    } else {
-      session = creeSession(opts);
-    }
-    await derouler(session);
-  } catch (e) {
-    etat.textContent = 'ERREUR : ' + e.message;
-    enCours = false; majBoutons();
-  }
-};
-
-$('pause').onclick = async () => {
-  // en cours -> pause
-  if (enCours && !enPause) {
-    enPause = true;
-    majBoutons();
-    etat.textContent = 'en pause au pas ' + session.i + ' / ' + session.suite.length;
-    return;
-  }
-  // en pause -> reprise avec le nombre d'etapes restantes
-  if (enCours && enPause) {
-    replanifie(session, Math.max(2, +$('etapes').value - session.fait));
-    enPause = false;
-    majBoutons();
-    return;
-  }
-  // rien en cours -> on raffine l'image affichee
-  if (!derniere || agrandie) return;
-  session = creeSession({
-    H: dernH, W: dernW,
-    etapes: +$('etapes').value,
-    depart: derniere,
-    tDepart: T_REPRISE,
-  });
-  await derouler(session, 'reprise');
-};
-
-$('up').onclick = async () => {
-  if (enCours || !derniere || agrandie) return;
-  enCours = true; majBoutons();
-  etat.textContent = 'agrandissement...';
-  await attendreImage();
-  const t0 = performance.now();
-  try {
-    const n = derniere.length;
-    const src = new Float32Array(n);
-    for (let k = 0; k < n; k++) src[k] = (derniere[k] + 1) * 0.5;
-    const bx = bufTemp(src);
-    debutLot();
-    const r = agrandisSR(bx, dernH, dernW);
-    finLot();
-    const grand = await lire(r.buf, r.C * r.H * r.W);
-    libereTemp(null);
-    dessine(grand, r.H, r.W, 'unite');
-    agrandie = true;
-    etat.textContent = r.W + '×' + r.H + ' en ' +
-      ((performance.now() - t0) / 1000).toFixed(1) + ' s';
-  } catch (e) {
-    etat.textContent = 'ERREUR : ' + e.message;
-  }
-  enCours = false; majBoutons();
-};
-
-$('save').onclick = () => {
-  hors.toBlob((b) => {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(b);
-    a.download = 'paysage_' + Date.now() + '.png';
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  }, 'image/png');
-};
-
-// ---------- demarrage ----------
-(async () => {
-  try {
-    await initGPU();
-    etat.textContent = 'chargement du modele EMA...';
-    await chargeVariante('ema', 'poids_ema');
-    etat.textContent = 'chargement du modele brut...';
-    await chargeVariante('brut', 'poids_brut');
-    choisitVariante('ema');
-    S = ARCHI.taille;
-
-    hors = document.createElement('canvas');
-    hors.width = S; hors.height = S;
-    hctx = hors.getContext('2d');
-
-    if (!ABAR) ABAR = calendrier(ARCHI.T);
-    derniere = randn(3 * S * S, Math.random);
-    dernH = S; dernW = S;
-    dessine(derniere, S, S, 'signe');
-
-    etat.textContent = 'chargement de l\'agrandisseur...';
-    await chargePoidsSR();
-
-    majBoutons();
-    etat.textContent = 'pret — estimation ' + ($('etapes').value * SEC).toFixed(0) + ' s';
-  } catch (e) {
-    etat.textContent = 'ERREUR : ' + e.message;
-  }
-})();
-</script>
 </body>
 </html>
