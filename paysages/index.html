@@ -22,6 +22,8 @@
   * { box-sizing: border-box; margin: 0; padding: 0;
       -webkit-tap-highlight-color: transparent; }
 
+  :focus { outline: none; }
+
   body {
     background: var(--fond);
     background-image:
@@ -100,7 +102,7 @@
     line-height: 1.4;
   }
 
-  /* ---------- panneau de reglages ---------- */
+  /* ---------- panneau ---------- */
   .panneau {
     margin-top: 22px;
     background: #fff;
@@ -136,7 +138,7 @@
     padding: 1px 10px;
   }
 
-  /* curseurs */
+  /* ---------- curseurs ---------- */
   input[type=range] {
     -webkit-appearance: none; appearance: none;
     width: 100%; background: transparent;
@@ -160,29 +162,72 @@
     background: var(--accent);
     border: 2.5px solid var(--trait); border-radius: 50%;
   }
-  input[type=range]:disabled { opacity: .4; }
+  input[type=range]:disabled { opacity: .35; }
 
-  /* liste deroulante */
-  select {
-    -webkit-appearance: none; appearance: none;
+  /* ---------- liste deroulante maison ---------- */
+  .liste { position: relative; }
+
+  .listeBtn {
     width: 100%;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
     font: 500 16px 'Fredoka', system-ui, sans-serif;
     color: var(--encre);
     background: #fff;
-    background-image:
-      linear-gradient(45deg, transparent 50%, var(--encre) 50%),
-      linear-gradient(135deg, var(--encre) 50%, transparent 50%);
-    background-position: calc(100% - 20px) 21px, calc(100% - 14px) 21px;
-    background-size: 6px 6px, 6px 6px;
-    background-repeat: no-repeat;
     border: 3px solid var(--trait);
     border-radius: 14px;
-    padding: 12px 44px 12px 14px;
+    box-shadow: none;
+    padding: 12px 16px;
     min-height: 48px;
+    text-align: left;
+    cursor: pointer;
   }
-  select:disabled { opacity: .45; }
+  .listeBtn:disabled { opacity: .35; cursor: default; }
+  .listeBtn .fleche {
+    width: 9px; height: 9px; flex: none;
+    border-right: 3px solid var(--encre);
+    border-bottom: 3px solid var(--encre);
+    transform: rotate(45deg) translate(-2px, -2px);
+    transition: transform .16s ease;
+  }
+  .liste.ouverte .listeBtn { background: var(--jaune); }
+  .liste.ouverte .fleche { transform: rotate(-135deg) translate(-3px, -3px); }
 
-  /* case a cocher */
+  .listePanneau {
+    position: absolute; left: 0; right: 0; top: calc(100% + 8px);
+    z-index: 20;
+    background: #fff;
+    border: 3px solid var(--trait);
+    border-radius: 16px;
+    box-shadow: var(--ombre);
+    padding: 6px;
+    max-height: 300px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .listePanneau[hidden] { display: none; }
+
+  .listeOpt {
+    width: 100%;
+    display: block;
+    font: 500 15px 'Fredoka', system-ui, sans-serif;
+    color: var(--encre);
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 10px;
+    padding: 11px 13px;
+    min-height: 0;
+    text-align: left;
+    cursor: pointer;
+  }
+  .listeOpt:active { background: #f4ede1; }
+  .listeOpt[aria-selected="true"] {
+    background: var(--jaune);
+    font-weight: 600;
+  }
+
+  /* ---------- case a cocher ---------- */
   .bascule {
     display: flex; align-items: center; gap: 11px;
     font-size: 15px; font-weight: 500;
@@ -205,9 +250,10 @@
   }
   .bascule input:checked + .boite { background: var(--jaune); }
   .bascule input:checked + .boite::after { transform: rotate(-45deg) translate(1px, -2px) scale(1); }
-  .bascule input:disabled + .boite { opacity: .4; }
+  .bascule input:disabled + .boite { opacity: .35; }
+  .bascule input:disabled ~ span { opacity: .5; }
 
-  /* boutons */
+  /* ---------- boutons ---------- */
   .rangee { display: flex; gap: 12px; margin-top: 14px; }
   .rangee button { flex: 1; }
 
@@ -231,6 +277,7 @@
   button:disabled { opacity: .35; box-shadow: none; cursor: default; }
   button.principal { background: var(--accent); color: #fff; }
   button.doux { background: var(--jaune); }
+  .listeBtn:active:not(:disabled), .listeOpt:active { transform: none; }
 
   @media (max-width: 400px) {
     body { padding: 26px 14px 56px; }
@@ -259,17 +306,23 @@
 
     <div class="champ">
       <div class="etiquette"><span>Thème</span></div>
-      <select id="theme">
-        <option value="aucun" selected>Aucun, laisser faire le hasard</option>
-        <option value="foret">Forêt</option>
-        <option value="montagne">Montagne</option>
-        <option value="desert">Désert</option>
-        <option value="ocean">Océan</option>
-        <option value="coucher">Coucher de soleil</option>
-        <option value="neige">Neige</option>
-        <option value="nuit">Nuit</option>
-        <option value="prairie">Prairie</option>
-      </select>
+      <div class="liste" id="liste">
+        <button type="button" class="listeBtn" id="listeBtn">
+          <span id="listeTexte">Aucun, laisser faire le hasard</span>
+          <i class="fleche"></i>
+        </button>
+        <div class="listePanneau" id="listePanneau" hidden>
+          <button type="button" class="listeOpt" data-v="aucun" aria-selected="true">Aucun, laisser faire le hasard</button>
+          <button type="button" class="listeOpt" data-v="foret">Forêt</button>
+          <button type="button" class="listeOpt" data-v="montagne">Montagne</button>
+          <button type="button" class="listeOpt" data-v="desert">Désert</button>
+          <button type="button" class="listeOpt" data-v="ocean">Océan</button>
+          <button type="button" class="listeOpt" data-v="coucher">Coucher de soleil</button>
+          <button type="button" class="listeOpt" data-v="neige">Neige</button>
+          <button type="button" class="listeOpt" data-v="nuit">Nuit</button>
+          <button type="button" class="listeOpt" data-v="prairie">Prairie</button>
+        </div>
+      </div>
     </div>
 
     <div class="champ">
@@ -324,12 +377,44 @@ let S = 128;
 let session = null;
 let derniere = null, dernH = 128, dernW = 128;
 let enCours = false, enPause = false, annule = false;
+let enUpscale = false;         // agrandissement en cours
 let agrandie = false;
+let aGenere = false;           // au moins une etape de debruitage faite
 
 const SEC = 3.3;
-const APERCU = 3;        // etapes generees pour chaque candidat
-const T_REPRISE = 400;   // instant de rebruitage lors d'une reprise
+const APERCU = 3;
+const T_REPRISE = 400;
 const FORCE_MAX = 1.0;
+
+// ---------- liste deroulante maison ----------
+let themeCourant = 'aucun';
+
+(function initListe() {
+  const boite = $('liste'), btn = $('listeBtn'), panneau = $('listePanneau');
+
+  const ferme = () => { boite.classList.remove('ouverte'); panneau.hidden = true; };
+  const ouvre = () => { boite.classList.add('ouverte'); panneau.hidden = false; };
+
+  btn.onclick = (e) => {
+    e.stopPropagation();
+    if (btn.disabled) return;
+    panneau.hidden ? ouvre() : ferme();
+  };
+
+  for (const opt of panneau.querySelectorAll('.listeOpt')) {
+    opt.onclick = (e) => {
+      e.stopPropagation();
+      themeCourant = opt.dataset.v;
+      $('listeTexte').textContent = opt.textContent;
+      for (const o of panneau.querySelectorAll('.listeOpt'))
+        o.setAttribute('aria-selected', o === opt ? 'true' : 'false');
+      ferme();
+    };
+  }
+
+  document.addEventListener('click', ferme);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') ferme(); });
+})();
 
 // ---------- affichage ----------
 function dessine(tab, H, W, plage) {
@@ -359,17 +444,24 @@ function dessine(tab, H, W, plage) {
 function attendreImage() { return new Promise(r => requestAnimationFrame(r)); }
 
 function majBoutons() {
-  const occupe = enCours && !enPause;
-  $('go').disabled = false;
-  $('theme').disabled = occupe;
-  $('multi').disabled = occupe;
+  // les reglages sont bloques tant que le GPU travaille,
+  // mais restent accessibles en pause
+  const occupe = (enCours && !enPause) || enUpscale;
+
+  $('listeBtn').disabled = occupe;
+  $('multi').disabled    = occupe;
   $('influence').disabled = occupe;
+  $('etapes').disabled   = occupe;
 
-  $('pause').textContent = occupe ? 'Pause' : 'Reprendre';
-  $('pause').disabled = agrandie || !derniere;
+  $('go').disabled = enUpscale;
 
-  $('up').disabled   = enCours || !derniere || agrandie;
-  $('save').disabled = enCours || !derniere;
+  $('pause').textContent = (enCours && !enPause) ? 'Pause' : 'Reprendre';
+  $('pause').disabled = enUpscale || !aGenere;
+
+  // en pause, on peut agrandir et enregistrer l'image en cours
+  const fige = !enCours || enPause;
+  $('up').disabled   = enUpscale || !aGenere || agrandie || !fige;
+  $('save').disabled = enUpscale || !aGenere || !fige;
 }
 
 // ---------- boucle ----------
@@ -382,10 +474,12 @@ async function derouler(s, etiquette) {
     if (enPause) { await attendreImage(); continue; }
     const x0 = await pasSession(s);
     derniere = x0; dernH = s.H; dernW = s.W;
-    dessine(x0, s.H, s.W, 'signe');
+    aGenere = true;
+    if (!agrandie) dessine(x0, s.H, s.W, 'signe');
     etat.textContent = (etiquette ? etiquette + ' · ' : '') +
       'étape ' + s.i + ' / ' + s.suite.length +
       '   ·   ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s';
+    majBoutons();
     await attendreImage();
   }
 
@@ -401,11 +495,14 @@ async function derouler(s, etiquette) {
 async function phaseCandidats(opts) {
   zoneChoix.style.display = 'flex';
   zoneChoix.innerHTML = '';
+
   const sessions = [], toiles = [];
+  const dernierX0 = [];              // derniere image peinte de chaque candidat
   let choisi = null, resoudre;
   const attente = new Promise(r => { resoudre = r; });
 
   const peint = (k, tab) => {
+    dernierX0[k] = tab;
     toiles[k].getContext('2d').putImageData(
       new ImageData(versPixels(tab, opts.H, opts.W), opts.W, opts.H), 0, 0);
   };
@@ -416,8 +513,13 @@ async function phaseCandidats(opts) {
     c.onclick = () => {
       if (choisi !== null) return;
       choisi = k;
+      // affichage immediat : on ne fait surtout pas attendre le GPU
+      derniere = dernierX0[k];
+      dernH = opts.H; dernW = opts.W;
+      dessine(derniere, opts.H, opts.W, 'signe');
       zoneChoix.style.display = 'none';
       zoneChoix.innerHTML = '';
+      etat.textContent = 'départ choisi, génération...';
       resoudre(sessions[k]);
     };
     zoneChoix.appendChild(c);
@@ -425,17 +527,17 @@ async function phaseCandidats(opts) {
     sessions.push(creeSession({ ...opts, graine: (Math.random() * 1e9) | 0 }));
   }
 
-  // on affiche le bruit de depart : les vignettes sont cliquables tout de suite
+  // on montre le bruit de depart : les vignettes sont cliquables tout de suite
   for (let k = 0; k < 5; k++) peint(k, sessions[k].x);
   etat.textContent = 'touchez une image quand elle vous plaît';
 
-  (async () => {
+  // la boucle d'apercus tourne en arriere-plan
+  const boucleFinie = (async () => {
     for (let pas = 0; pas < APERCU; pas++) {
       for (let k = 0; k < 5; k++) {
-        if (choisi !== null) return;
-        if (annule) { resoudre(null); return; }
+        if (choisi !== null || annule) return;
         const x0 = await pasSession(sessions[k]);
-        if (choisi !== null) return;
+        if (choisi !== null || annule) return;
         peint(k, x0);
         etat.textContent = 'aperçus ' + (pas * 5 + k + 1) + ' / ' + (5 * APERCU) +
                            '   ·   touchez une image quand elle vous plaît';
@@ -443,10 +545,13 @@ async function phaseCandidats(opts) {
       }
     }
     while (choisi === null && !annule) await attendreImage();
-    if (annule) resoudre(null);
   })();
 
-  return attente;
+  const s = await attente;
+  // on laisse l'etape en vol se terminer avant de relancer le GPU,
+  // l'image est deja affichee donc l'attente ne se voit pas
+  await boucleFinie;
+  return annule ? null : s;
 }
 
 // ---------- controles ----------
@@ -461,13 +566,14 @@ function optionsCourantes() {
   return {
     H: S, W: S,
     etapes: +$('etapes').value,
-    theme: $('theme').value,
+    theme: themeCourant,
     influence: (+$('influence').value / 100) * FORCE_MAX,
     graine: null,
   };
 }
 
 $('go').onclick = async () => {
+  if (enUpscale) return;
   if (enCours) { annule = true; enPause = false; await attendreImage(); await attendreImage(); }
   annule = false; agrandie = false;
   const opts = optionsCourantes();
@@ -489,6 +595,8 @@ $('go').onclick = async () => {
 };
 
 $('pause').onclick = async () => {
+  if (enUpscale) return;
+
   // en cours -> pause
   if (enCours && !enPause) {
     enPause = true;
@@ -496,15 +604,16 @@ $('pause').onclick = async () => {
     etat.textContent = 'en pause à l\'étape ' + session.i + ' / ' + session.suite.length;
     return;
   }
-  // en pause -> reprise avec le nombre d'etapes restantes
+  // en pause -> reprise
   if (enCours && enPause) {
+    if (agrandie) { agrandie = false; dessine(derniere, dernH, dernW, 'signe'); }
     replanifie(session, Math.max(2, +$('etapes').value - session.fait));
     enPause = false;
     majBoutons();
     return;
   }
   // rien en cours -> on raffine l'image affichee
-  if (!derniere || agrandie) return;
+  if (!aGenere || agrandie) return;
   session = creeSession({
     H: dernH, W: dernW,
     etapes: +$('etapes').value,
@@ -515,8 +624,10 @@ $('pause').onclick = async () => {
 };
 
 $('up').onclick = async () => {
-  if (enCours || !derniere || agrandie) return;
-  enCours = true; majBoutons();
+  if (enUpscale || !aGenere || agrandie) return;
+  if (enCours && !enPause) return;
+
+  enUpscale = true; majBoutons();
   etat.textContent = 'agrandissement en cours...';
   await attendreImage();
   const t0 = performance.now();
@@ -537,7 +648,7 @@ $('up').onclick = async () => {
   } catch (e) {
     etat.textContent = 'ERREUR : ' + e.message;
   }
-  enCours = false; majBoutons();
+  enUpscale = false; majBoutons();
 };
 
 $('save').onclick = () => {
@@ -573,6 +684,7 @@ $('save').onclick = () => {
     hctx = hors.getContext('2d');
 
     if (!ABAR) ABAR = calendrier(ARCHI.T);
+    // bruit de depart, purement decoratif : rien n'a encore ete genere
     derniere = randn(3 * S * S, Math.random);
     dernH = S; dernW = S;
     dessine(derniere, S, S, 'signe');
