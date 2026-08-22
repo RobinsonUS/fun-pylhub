@@ -146,6 +146,14 @@
     padding: 1px 10px;
   }
 
+  #avert {
+    margin-top: 8px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--gris);
+    display: none;
+  }
+
   /* ---------- curseurs ---------- */
   input[type=range] {
     -webkit-appearance: none; appearance: none;
@@ -399,7 +407,8 @@
         <span>Étapes de débruitage</span>
         <output id="etapesVal">100</output>
       </div>
-      <input type="range" id="etapes" min="10" max="120" value="100">
+      <input type="range" id="etapes" min="10" max="200" value="100">
+      <p id="avert">Au-delà de 130 étapes, certaines tablettes coupent la génération. Elle reprendra toute seule, mais avec une pause.</p>
     </div>
 
     <div class="champ">
@@ -479,7 +488,9 @@ const SEC = 3.3;
 const APERCU = 3;
 const T_REPRISE = 400;
 const FORCE_MAX = 1.0;
-const RESPIRE = 20;            // etapes entre deux pauses laissees au GPU
+const RESPIRE = 12;            // etapes entre deux pauses laissees au GPU
+const REPOS_MS = 200;          // duree de chaque pause
+const RELANCES_MAX = 3;        // coupures GPU tolerees par generation
 
 // ---------- fenetre d'infos ----------
 $('infoBtn').onclick = () => { $('voile').hidden = false; };
@@ -568,15 +579,48 @@ function majBoutons() {
   $('save').disabled = enUpscale || !aGenere || !fige;
 }
 
+// Le device WebGPU peut mourir sur une longue session, surtout sur
+// tablette. On le recree et on reinjecte les poids : la session de
+// debruitage vit en memoire CPU et n'a rien perdu.
+async function relanceGPU() {
+  try {
+    reinitialiseGPU();
+    await initGPU();
+    await chargeVariante('ema', 'poids_ema');
+    choisitVariante('ema');
+    await chargePoidsSR();
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 // ---------- boucle ----------
 async function derouler(s, etiquette) {
   enCours = true; enPause = false; agrandie = false;
   majBoutons();
   const t0 = performance.now();
+  let relances = 0;
 
   while (!sessionFinie(s) && !annule) {
     if (enPause) { await attendreImage(); continue; }
-    const x0 = await pasSession(s);
+
+    let x0;
+    try {
+      x0 = await pasSession(s);
+    } catch (err) {
+      if (++relances > RELANCES_MAX) {
+        etat.textContent = 'ERREUR : ' + err.message +
+          '. Réessayez avec moins d\'étapes.';
+        break;
+      }
+      etat.textContent = 'le GPU a coupé, reprise en cours...';
+      await new Promise(r => setTimeout(r, 600));
+      const ok = await relanceGPU();
+      if (!ok) { etat.textContent = 'ERREUR : ' + err.message; break; }
+      continue;
+    }
+
     derniere = x0; dernH = s.H; dernW = s.W;
     aGenere = true;
     if (!agrandie) dessine(x0, s.H, s.W, 'signe');
@@ -587,7 +631,7 @@ async function derouler(s, etiquette) {
     await attendreImage();
     // toutes les RESPIRE etapes on laisse le GPU souffler : les
     // sessions de calcul trop longues finissent par etre coupees
-    if (s.i % RESPIRE === 0) await new Promise(r => setTimeout(r, 120));
+    if (s.i % RESPIRE === 0) await new Promise(r => setTimeout(r, REPOS_MS));
   }
 
   enCours = false; enPause = false;
@@ -640,16 +684,23 @@ async function phaseCandidats(opts) {
 
   // la boucle d'apercus tourne en arriere-plan
   const boucleFinie = (async () => {
-    for (let pas = 0; pas < APERCU; pas++) {
-      for (let k = 0; k < 5; k++) {
-        if (choisi !== null || annule) return;
-        const x0 = await pasSession(sessions[k]);
-        if (choisi !== null || annule) return;
-        peint(k, x0);
-        etat.textContent = 'aperçus ' + (pas * 5 + k + 1) + ' / ' + (5 * APERCU) +
-                           '   ·   touchez une image quand elle vous plaît';
-        await attendreImage();
+    try {
+      for (let pas = 0; pas < APERCU; pas++) {
+        for (let k = 0; k < 5; k++) {
+          if (choisi !== null || annule) return;
+          const x0 = await pasSession(sessions[k]);
+          if (choisi !== null || annule) return;
+          peint(k, x0);
+          etat.textContent = 'aperçus ' + (pas * 5 + k + 1) + ' / ' + (5 * APERCU) +
+                             '   ·   touchez une image quand elle vous plaît';
+          await attendreImage();
+        }
       }
+    } catch (e) {
+      // une coupure pendant les apercus : on laisse choisir sur ce qui est peint
+      etat.textContent = 'touchez une image quand elle vous plaît';
+      await relanceGPU();
+      return;
     }
     while (choisi === null && !annule) await attendreImage();
   })();
@@ -663,9 +714,10 @@ async function phaseCandidats(opts) {
 
 // ---------- controles ----------
 $('etapes').oninput = () => {
-  $('etapesVal').textContent = $('etapes').value;
-  if (!enCours) etat.textContent = 'environ ' +
-    ($('etapes').value * SEC).toFixed(0) + ' s par image';
+  const v = +$('etapes').value;
+  $('etapesVal').textContent = v;
+  $('avert').style.display = v > 130 ? 'block' : 'none';
+  if (!enCours) etat.textContent = 'environ ' + (v * SEC).toFixed(0) + ' s par image';
 };
 $('influence').oninput = () => { $('influenceVal').textContent = $('influence').value; };
 
@@ -754,6 +806,7 @@ $('up').onclick = async () => {
       ((performance.now() - t0) / 1000).toFixed(1) + ' s';
   } catch (e) {
     etat.textContent = 'ERREUR : ' + e.message;
+    await relanceGPU();
   }
   enUpscale = false; majBoutons();
 };
