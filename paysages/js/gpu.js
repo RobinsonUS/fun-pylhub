@@ -5,7 +5,12 @@ const POOL = new Map();
 let TEMP = [];
 let ENC = null, PASSE = null;
 
+// raison de la perte du device, remplie si le GPU coupe en cours de route
 let RAISON_PERTE = null;
+
+// un seul buffer mappable, reutilise a chaque lecture : en creer un par
+// etape finit par saturer la memoire GPU sur tablette
+let BUF_LECTURE = null;
 
 async function initGPU() {
   if (!navigator.gpu) throw new Error('WebGPU absent');
@@ -13,7 +18,6 @@ async function initGPU() {
   if (!adapt) throw new Error('aucun adaptateur');
   DEV = await adapt.requestDevice();
 
-  // le device peut mourir en cours de route : on garde la raison
   DEV.lost.then((info) => {
     RAISON_PERTE = info.message || info.reason || 'inconnue';
   });
@@ -120,15 +124,33 @@ function concat(ba, na, bb, nb) {
 }
 
 async function lire(buf, n) {
-  const st = DEV.createBuffer({
-    size: n * 4,
-    usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
-  });
+  const taille = n * 4;
+
+  // un buffer mappable ne peut pas etre plus petit que la demande :
+  // on l'agrandit au besoin, notamment lors de l'agrandissement x4
+  if (!BUF_LECTURE || BUF_LECTURE.size < taille) {
+    if (BUF_LECTURE) BUF_LECTURE.destroy();
+    BUF_LECTURE = DEV.createBuffer({
+      size: taille,
+      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+    });
+  }
+  const st = BUF_LECTURE;
+
   const enc = DEV.createCommandEncoder();
-  enc.copyBufferToBuffer(buf, 0, st, 0, n * 4);
+  enc.copyBufferToBuffer(buf, 0, st, 0, taille);
   DEV.queue.submit([enc.finish()]);
-  await st.mapAsync(GPUMapMode.READ);
-  const r = new Float32Array(st.getMappedRange().slice(0));
-  st.unmap(); st.destroy();
+
+  try {
+    await st.mapAsync(GPUMapMode.READ, 0, taille);
+  } catch (e) {
+    // mapAsync echoue presque toujours parce que le device a ete perdu
+    if (RAISON_PERTE)
+      throw new Error('le GPU a coupé (' + RAISON_PERTE + '). Rechargez la page.');
+    throw new Error('lecture GPU impossible. Rechargez la page.');
+  }
+
+  const r = new Float32Array(st.getMappedRange(0, taille).slice(0));
+  st.unmap();
   return r;
 }
