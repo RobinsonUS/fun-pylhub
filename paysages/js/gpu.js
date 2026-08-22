@@ -25,6 +25,23 @@ async function initGPU() {
   return adapt;
 }
 
+// Vide tous les caches lies a l'ancien device, avant d'en creer un neuf.
+// GPU_POIDS vit dans couches.js, VARIANTE et PLAN dans poids.js et
+// couches.js : les scripts partagent le meme espace global.
+function reinitialiseGPU() {
+  CACHE.clear();
+  CACHE_UNIF.clear();
+  POOL.clear();
+  TEMP = [];
+  ENC = null; PASSE = null;
+  BUF_LECTURE = null;
+  RAISON_PERTE = null;
+  GPU_POIDS.clear();
+  VARIANTE = null;
+  PLAN = null;
+  DEV = null;
+}
+
 function bufDepuis(tab) {
   const b = DEV.createBuffer({
     size: Math.max(4, tab.byteLength),
@@ -146,8 +163,8 @@ async function lire(buf, n) {
   } catch (e) {
     // mapAsync echoue presque toujours parce que le device a ete perdu
     if (RAISON_PERTE)
-      throw new Error('le GPU a coupé (' + RAISON_PERTE + '). Rechargez la page.');
-    throw new Error('lecture GPU impossible. Rechargez la page.');
+      throw new Error('le GPU a coupé (' + RAISON_PERTE + ')');
+    throw new Error('lecture GPU impossible');
   }
 
   const r = new Float32Array(st.getMappedRange(0, taille).slice(0));
