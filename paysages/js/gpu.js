@@ -5,11 +5,19 @@ const POOL = new Map();
 let TEMP = [];
 let ENC = null, PASSE = null;
 
+let RAISON_PERTE = null;
+
 async function initGPU() {
   if (!navigator.gpu) throw new Error('WebGPU absent');
   const adapt = await navigator.gpu.requestAdapter();
   if (!adapt) throw new Error('aucun adaptateur');
   DEV = await adapt.requestDevice();
+
+  // le device peut mourir en cours de route : on garde la raison
+  DEV.lost.then((info) => {
+    RAISON_PERTE = info.message || info.reason || 'inconnue';
+  });
+
   return adapt;
 }
 
