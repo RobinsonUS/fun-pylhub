@@ -3,79 +3,312 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Paysages</title>
+<title>Paysages infinis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  body { margin: 0; padding: 16px; font: 16px system-ui, -apple-system, sans-serif; }
-  #vue { display: block; width: 100%; max-width: 512px; image-rendering: pixelated; }
-  .ligne { display: flex; align-items: center; gap: 10px;
-           margin-top: 10px; max-width: 512px; flex-wrap: wrap; }
-  .ligne > span { min-width: 70px; }
-  input[type=range] { flex: 1; min-width: 120px; }
-  select, input[type=number] { font: inherit; padding: 8px; min-height: 40px; }
-  input[type=number] { width: 140px; }
-  button { font: inherit; padding: 10px 16px; min-height: 44px;
-           touch-action: manipulation; }
-  button:disabled { opacity: .35; }
-  #etat { margin-top: 10px; font-variant-numeric: tabular-nums; min-height: 1.4em; }
-  #choix { display: none; gap: 6px; flex-wrap: wrap; max-width: 512px; margin-top: 10px; }
-  #choix canvas { width: 80px; height: 80px; image-rendering: pixelated;
-                  border: 2px solid transparent; }
-  #choix canvas:active { border-color: #f5c451; }
+  :root {
+    --fond: #fdf8f0;
+    --encre: #1f1b16;
+    --gris: #6b625a;
+    --trait: #1f1b16;
+    --accent: #e8792b;
+    --jaune: #ffe9a8;
+    --ombre: 5px 5px 0 var(--trait);
+    --ombre-p: 3px 3px 0 var(--trait);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0;
+      -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--fond);
+    background-image:
+      radial-gradient(circle at 12% 14%, rgba(255, 206, 122, .34), transparent 44%),
+      radial-gradient(circle at 88% 8%,  rgba(140, 200, 255, .30), transparent 42%),
+      radial-gradient(circle at 50% 100%, rgba(190, 245, 200, .28), transparent 46%);
+    background-attachment: fixed;
+    color: var(--encre);
+    font-family: 'Fredoka', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    padding: 34px 18px 70px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .page { width: 100%; max-width: 560px; }
+
+  h1 {
+    font-size: clamp(30px, 8vw, 42px);
+    font-weight: 700;
+    letter-spacing: -.03em;
+    line-height: 1.05;
+    text-align: center;
+  }
+  h1 em { font-style: normal; color: var(--accent); }
+
+  .sous {
+    margin: 10px 0 26px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--gris);
+    line-height: 1.5;
+  }
+
+  /* ---------- image ---------- */
+  .cadre {
+    background: #efe7db;
+    border: 4px solid var(--trait);
+    border-radius: 22px;
+    box-shadow: var(--ombre);
+    overflow: hidden;
+    line-height: 0;
+  }
+  #vue { display: block; width: 100%; image-rendering: pixelated; }
+
+  /* ---------- vignettes candidates ---------- */
+  #choix {
+    display: none;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 16px;
+  }
+  #choix canvas {
+    width: 86px; height: 86px;
+    image-rendering: pixelated;
+    border: 3px solid var(--trait);
+    border-radius: 14px;
+    box-shadow: var(--ombre-p);
+    cursor: pointer;
+    transition: transform .15s ease;
+  }
+  #choix canvas:active { transform: translate(-2px, -2px) scale(1.04); }
+
+  /* ---------- etat ---------- */
+  #etat {
+    margin-top: 16px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--gris);
+    font-variant-numeric: tabular-nums;
+    min-height: 1.5em;
+    line-height: 1.4;
+  }
+
+  /* ---------- panneau de reglages ---------- */
+  .panneau {
+    margin-top: 22px;
+    background: #fff;
+    border: 4px solid var(--trait);
+    border-radius: 22px;
+    box-shadow: var(--ombre);
+    padding: 20px 20px 22px;
+  }
+
+  .champ { margin-bottom: 20px; }
+  .champ:last-child { margin-bottom: 0; }
+
+  .etiquette {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--gris);
+    margin-bottom: 9px;
+  }
+  .etiquette output {
+    font-size: 15px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--encre);
+    background: var(--jaune);
+    border: 2px solid var(--trait);
+    border-radius: 999px;
+    padding: 1px 10px;
+  }
+
+  /* curseurs */
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; background: transparent;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 12px; background: #f0e9dd;
+    border: 2.5px solid var(--trait); border-radius: 999px;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 26px; height: 26px; margin-top: -9.5px;
+    background: var(--accent);
+    border: 2.5px solid var(--trait); border-radius: 50%;
+  }
+  input[type=range]::-moz-range-track {
+    height: 12px; background: #f0e9dd;
+    border: 2.5px solid var(--trait); border-radius: 999px;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 22px; height: 22px;
+    background: var(--accent);
+    border: 2.5px solid var(--trait); border-radius: 50%;
+  }
+  input[type=range]:disabled { opacity: .4; }
+
+  /* liste deroulante */
+  select {
+    -webkit-appearance: none; appearance: none;
+    width: 100%;
+    font: 500 16px 'Fredoka', system-ui, sans-serif;
+    color: var(--encre);
+    background: #fff;
+    background-image:
+      linear-gradient(45deg, transparent 50%, var(--encre) 50%),
+      linear-gradient(135deg, var(--encre) 50%, transparent 50%);
+    background-position: calc(100% - 20px) 21px, calc(100% - 14px) 21px;
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+    border: 3px solid var(--trait);
+    border-radius: 14px;
+    padding: 12px 44px 12px 14px;
+    min-height: 48px;
+  }
+  select:disabled { opacity: .45; }
+
+  /* case a cocher */
+  .bascule {
+    display: flex; align-items: center; gap: 11px;
+    font-size: 15px; font-weight: 500;
+    cursor: pointer; user-select: none;
+  }
+  .bascule input { position: absolute; opacity: 0; pointer-events: none; }
+  .boite {
+    width: 26px; height: 26px; flex: none;
+    background: #fff;
+    border: 3px solid var(--trait);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .boite::after {
+    content: ''; width: 12px; height: 7px;
+    border-left: 3.5px solid var(--trait);
+    border-bottom: 3.5px solid var(--trait);
+    transform: rotate(-45deg) translate(1px, -2px) scale(0);
+    transition: transform .14s ease;
+  }
+  .bascule input:checked + .boite { background: var(--jaune); }
+  .bascule input:checked + .boite::after { transform: rotate(-45deg) translate(1px, -2px) scale(1); }
+  .bascule input:disabled + .boite { opacity: .4; }
+
+  /* boutons */
+  .rangee { display: flex; gap: 12px; margin-top: 14px; }
+  .rangee button { flex: 1; }
+
+  button {
+    font: 600 16px 'Fredoka', system-ui, sans-serif;
+    color: var(--encre);
+    background: #fff;
+    border: 3px solid var(--trait);
+    border-radius: 14px;
+    box-shadow: var(--ombre-p);
+    padding: 13px 14px;
+    min-height: 50px;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  button:active:not(:disabled) {
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 var(--trait);
+  }
+  button:disabled { opacity: .35; box-shadow: none; cursor: default; }
+  button.principal { background: var(--accent); color: #fff; }
+  button.doux { background: var(--jaune); }
+
+  @media (max-width: 400px) {
+    body { padding: 26px 14px 56px; }
+    .panneau { padding: 17px; }
+    button { font-size: 15px; padding: 12px 10px; }
+  }
 </style>
 </head>
 <body>
 
-<canvas id="vue"></canvas>
-<div id="choix"></div>
+<div class="page">
 
-<div class="ligne">
-  <label><input type="checkbox" id="multi"> choisir parmi 5</label>
+  <h1>Paysages <em>infinis</em></h1>
+  <p class="sous">
+    Un réseau de neurones qui dessine des lieux<br>
+    n'ayant jamais existé, sur votre appareil.
+  </p>
+
+  <div class="cadre"><canvas id="vue"></canvas></div>
+
+  <div id="choix"></div>
+
+  <div id="etat">chargement...</div>
+
+  <div class="panneau">
+
+    <div class="champ">
+      <div class="etiquette"><span>Thème</span></div>
+      <select id="theme">
+        <option value="aucun" selected>Aucun, laisser faire le hasard</option>
+        <option value="foret">Forêt</option>
+        <option value="montagne">Montagne</option>
+        <option value="desert">Désert</option>
+        <option value="ocean">Océan</option>
+        <option value="coucher">Coucher de soleil</option>
+        <option value="neige">Neige</option>
+        <option value="nuit">Nuit</option>
+        <option value="prairie">Prairie</option>
+      </select>
+    </div>
+
+    <div class="champ">
+      <div class="etiquette">
+        <span>Influence du thème</span>
+        <output id="influenceVal">30</output>
+      </div>
+      <input type="range" id="influence" min="0" max="100" value="30">
+    </div>
+
+    <div class="champ">
+      <div class="etiquette">
+        <span>Étapes de débruitage</span>
+        <output id="etapesVal">50</output>
+      </div>
+      <input type="range" id="etapes" min="10" max="200" value="50">
+    </div>
+
+    <div class="champ">
+      <label class="bascule">
+        <input type="checkbox" id="multi">
+        <span class="boite"></span>
+        <span>Proposer 5 départs au choix</span>
+      </label>
+    </div>
+
+    <div class="rangee">
+      <button id="go" class="principal">Générer</button>
+      <button id="pause" class="doux">Reprendre</button>
+    </div>
+
+    <div class="rangee">
+      <button id="up" disabled>Agrandir ×4</button>
+      <button id="save" disabled>Enregistrer</button>
+    </div>
+
+  </div>
+
 </div>
-
-<div class="ligne">
-  <span>Thème</span>
-  <select id="theme">
-    <option value="aucun" selected>aucun</option>
-    <option value="foret">forêt</option>
-    <option value="montagne">montagne</option>
-    <option value="desert">désert</option>
-    <option value="ocean">océan</option>
-    <option value="coucher">coucher de soleil</option>
-    <option value="neige">neige</option>
-    <option value="nuit">nuit</option>
-    <option value="prairie">prairie</option>
-  </select>
-</div>
-
-<div class="ligne">
-  <span>Influence</span>
-  <input type="range" id="influence" min="0" max="100" value="30">
-  <output id="influenceVal">30</output>
-</div>
-
-<div class="ligne">
-  <span>Étapes</span>
-  <input type="range" id="etapes" min="10" max="200" value="50">
-  <output id="etapesVal">50</output>
-</div>
-
-<div class="ligne">
-  <span>Graine</span>
-  <input type="number" id="graine" placeholder="aléatoire">
-  <button id="de">Dé</button>
-</div>
-
-<div class="ligne">
-  <button id="go">Générer</button>
-  <button id="pause">Reprendre</button>
-</div>
-
-<div class="ligne">
-  <button id="up" disabled>Agrandir ×4</button>
-  <button id="save" disabled>Enregistrer</button>
-</div>
-
-<div id="etat">chargement...</div>
 
 <script src="js/poids.js"></script>
 <script src="js/gpu.js"></script>
@@ -130,8 +363,6 @@ function majBoutons() {
   $('go').disabled = false;
   $('theme').disabled = occupe;
   $('multi').disabled = occupe;
-  $('graine').disabled = occupe;
-  $('de').disabled = occupe;
   $('influence').disabled = occupe;
 
   $('pause').textContent = occupe ? 'Pause' : 'Reprendre';
@@ -152,19 +383,17 @@ async function derouler(s, etiquette) {
     const x0 = await pasSession(s);
     derniere = x0; dernH = s.H; dernW = s.W;
     dessine(x0, s.H, s.W, 'signe');
-    etat.textContent = (etiquette ? etiquette + '  ' : '') +
-      'etape ' + s.i + ' / ' + s.suite.length +
-      '   t=' + s.suite[Math.min(s.i, s.suite.length - 1)] +
-      '   ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s' +
-      '   graine ' + s.graine;
+    etat.textContent = (etiquette ? etiquette + ' · ' : '') +
+      'étape ' + s.i + ' / ' + s.suite.length +
+      '   ·   ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s';
     await attendreImage();
   }
 
   enCours = false; enPause = false;
   majBoutons();
   if (sessionFinie(s) && !annule)
-    etat.textContent = 'termine en ' + ((performance.now() - t0) / 1000).toFixed(1) +
-                       ' s   graine ' + s.graine;
+    etat.textContent = 'terminé en ' +
+      ((performance.now() - t0) / 1000).toFixed(1) + ' s';
   annule = false;
 }
 
@@ -198,7 +427,7 @@ async function phaseCandidats(opts) {
 
   // on affiche le bruit de depart : les vignettes sont cliquables tout de suite
   for (let k = 0; k < 5; k++) peint(k, sessions[k].x);
-  etat.textContent = 'apercus — touche une image quand tu veux';
+  etat.textContent = 'touchez une image quand elle vous plaît';
 
   (async () => {
     for (let pas = 0; pas < APERCU; pas++) {
@@ -208,8 +437,8 @@ async function phaseCandidats(opts) {
         const x0 = await pasSession(sessions[k]);
         if (choisi !== null) return;
         peint(k, x0);
-        etat.textContent = 'apercus ' + (pas * 5 + k + 1) + ' / ' + (5 * APERCU) +
-                           ' — touche une image quand tu veux';
+        etat.textContent = 'aperçus ' + (pas * 5 + k + 1) + ' / ' + (5 * APERCU) +
+                           '   ·   touchez une image quand elle vous plaît';
         await attendreImage();
       }
     }
@@ -223,19 +452,18 @@ async function phaseCandidats(opts) {
 // ---------- controles ----------
 $('etapes').oninput = () => {
   $('etapesVal').textContent = $('etapes').value;
-  if (!enCours) etat.textContent = 'estimation ' + ($('etapes').value * SEC).toFixed(0) + ' s';
+  if (!enCours) etat.textContent = 'environ ' +
+    ($('etapes').value * SEC).toFixed(0) + ' s par image';
 };
 $('influence').oninput = () => { $('influenceVal').textContent = $('influence').value; };
-$('de').onclick = () => { $('graine').value = (Math.random() * 1e9) | 0; };
 
 function optionsCourantes() {
-  const g = $('graine').value.trim();
   return {
     H: S, W: S,
     etapes: +$('etapes').value,
     theme: $('theme').value,
     influence: (+$('influence').value / 100) * FORCE_MAX,
-    graine: g === '' ? null : (+g | 0),
+    graine: null,
   };
 }
 
@@ -265,7 +493,7 @@ $('pause').onclick = async () => {
   if (enCours && !enPause) {
     enPause = true;
     majBoutons();
-    etat.textContent = 'en pause au pas ' + session.i + ' / ' + session.suite.length;
+    etat.textContent = 'en pause à l\'étape ' + session.i + ' / ' + session.suite.length;
     return;
   }
   // en pause -> reprise avec le nombre d'etapes restantes
@@ -289,7 +517,7 @@ $('pause').onclick = async () => {
 $('up').onclick = async () => {
   if (enCours || !derniere || agrandie) return;
   enCours = true; majBoutons();
-  etat.textContent = 'agrandissement...';
+  etat.textContent = 'agrandissement en cours...';
   await attendreImage();
   const t0 = performance.now();
   try {
@@ -304,7 +532,7 @@ $('up').onclick = async () => {
     libereTemp(null);
     dessine(grand, r.H, r.W, 'unite');
     agrandie = true;
-    etat.textContent = r.W + '×' + r.H + ' en ' +
+    etat.textContent = r.W + ' × ' + r.H + ' en ' +
       ((performance.now() - t0) / 1000).toFixed(1) + ' s';
   } catch (e) {
     etat.textContent = 'ERREUR : ' + e.message;
@@ -325,19 +553,18 @@ $('save').onclick = () => {
 (async () => {
   const mo = (o) => (o / 1048576).toFixed(1);
   const barre = (etiquette) => (recu, total) => {
-    etat.textContent = etiquette + ' ' + mo(recu) + ' / ' + mo(total) + ' Mo';
+    etat.textContent = etiquette + '   ' + mo(recu) + ' / ' + mo(total) + ' Mo';
   };
 
   try {
     if (!navigator.gpu) {
       etat.textContent =
-        "Ce navigateur ne gere pas WebGPU. Essaie Chrome, ou Safari sur iOS 18 et plus " +
-        "(Reglages > Apps > Safari > Avance > Fonctionnalites experimentales > WebGPU).";
+        "Ce navigateur ne gère pas WebGPU. Essayez Chrome, ou Safari sur iOS 18 et plus.";
       return;
     }
     await initGPU();
 
-    await chargeVariante('ema', 'poids_ema', barre('chargement du modele'));
+    await chargeVariante('ema', 'poids_ema', barre('chargement du modèle'));
     choisitVariante('ema');
     S = ARCHI.taille;
 
@@ -353,7 +580,8 @@ $('save').onclick = () => {
     await chargePoidsSR(barre("chargement de l'agrandisseur"));
 
     majBoutons();
-    etat.textContent = 'pret — estimation ' + ($('etapes').value * SEC).toFixed(0) + ' s';
+    etat.textContent = 'prêt · environ ' +
+      ($('etapes').value * SEC).toFixed(0) + ' s par image';
   } catch (e) {
     etat.textContent = 'ERREUR : ' + e.message;
   }
