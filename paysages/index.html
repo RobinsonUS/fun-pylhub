@@ -399,7 +399,7 @@
         <span>Étapes de débruitage</span>
         <output id="etapesVal">100</output>
       </div>
-      <input type="range" id="etapes" min="10" max="200" value="100">
+      <input type="range" id="etapes" min="10" max="120" value="100">
     </div>
 
     <div class="champ">
@@ -479,6 +479,7 @@ const SEC = 3.3;
 const APERCU = 3;
 const T_REPRISE = 400;
 const FORCE_MAX = 1.0;
+const RESPIRE = 20;            // etapes entre deux pauses laissees au GPU
 
 // ---------- fenetre d'infos ----------
 $('infoBtn').onclick = () => { $('voile').hidden = false; };
@@ -584,6 +585,9 @@ async function derouler(s, etiquette) {
       '   ·   ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s';
     majBoutons();
     await attendreImage();
+    // toutes les RESPIRE etapes on laisse le GPU souffler : les
+    // sessions de calcul trop longues finissent par etre coupees
+    if (s.i % RESPIRE === 0) await new Promise(r => setTimeout(r, 120));
   }
 
   enCours = false; enPause = false;
